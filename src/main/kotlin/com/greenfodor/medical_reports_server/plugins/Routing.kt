@@ -5,6 +5,7 @@ import com.greenfodor.medical_reports_server.db.dao.LoginUser
 import com.greenfodor.medical_reports_server.db.dao.NewUser
 import com.greenfodor.medical_reports_server.db.dao.UserService
 import com.greenfodor.medical_reports_server.db.model.UserRoles
+import com.greenfodor.medical_reports_server.model.ErrorResponse
 import com.typesafe.config.ConfigFactory
 import freemarker.cache.ClassTemplateLoader
 import io.ktor.application.*
@@ -29,7 +30,10 @@ fun Application.configureRouting() {
 
     install(StatusPages) {
         exception<Throwable> { e ->
-            call.respondText(e.localizedMessage, ContentType.Text.Plain, HttpStatusCode.InternalServerError)
+            call.respond(
+                HttpStatusCode.InternalServerError,
+                ErrorResponse(e.localizedMessage, HttpStatusCode.InternalServerError.value)
+            )
         }
     }
     install(ContentNegotiation) {
@@ -60,7 +64,7 @@ fun Application.configureRouting() {
             }
 
             userService.createUser(newUser)
-            call.respond("wait for your account to receive a role")
+            call.respond(HttpStatusCode.OK)
         }
 
         post("/login") {
@@ -72,7 +76,7 @@ fun Application.configureRouting() {
             }
 
             val token = simpleJwt.sign(user.id)
-            call.respondText("token: $token")
+            call.respond(HttpStatusCode.OK, user.toLoginResponse(token))
         }
 
         authenticate {

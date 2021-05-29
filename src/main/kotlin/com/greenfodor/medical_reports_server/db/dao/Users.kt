@@ -24,7 +24,9 @@ data class AuthUser(
     val email: String,
     val password: String,
     val role: String?
-)
+) {
+    fun toLoginResponse(token: String) = LoginResponse(User(id, name, email, role), token)
+}
 
 data class NewUser(
     @SerializedName("name")
@@ -40,4 +42,11 @@ data class LoginUser(
     val email: String,
     @SerializedName("password")
     val password: String
+)
+
+data class LoginResponse(
+    @SerializedName("user")
+    val user: User,
+    @SerializedName("token")
+    val token: String
 )
