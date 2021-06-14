@@ -1,5 +1,6 @@
 package com.greenfodor.medical_reports_server.db
 
+import com.greenfodor.medical_reports_server.db.dao.MedicalReports
 import com.greenfodor.medical_reports_server.db.dao.Patients
 import com.greenfodor.medical_reports_server.db.dao.Users
 import com.zaxxer.hikari.HikariConfig
@@ -14,6 +15,7 @@ object DatabaseFactory {
         transaction {
             SchemaUtils.create(Users)
             SchemaUtils.create(Patients)
+            SchemaUtils.create(MedicalReports)
 
 //            Patients.insert {
 //                it[name] = "George"

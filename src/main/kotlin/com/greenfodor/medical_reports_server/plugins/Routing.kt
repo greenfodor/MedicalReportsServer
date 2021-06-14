@@ -2,7 +2,7 @@ package com.greenfodor.medical_reports_server.plugins
 
 import com.greenfodor.medical_reports_server.db.DatabaseFactory
 import com.greenfodor.medical_reports_server.db.dao.*
-import com.greenfodor.medical_reports_server.model.UserRoles
+import com.greenfodor.medical_reports_server.model.UserRolesEnum
 import com.greenfodor.medical_reports_server.model.ErrorResponse
 import com.typesafe.config.ConfigFactory
 import freemarker.cache.ClassTemplateLoader
@@ -52,6 +52,7 @@ fun Application.configureRouting() {
     DatabaseFactory.init()
     val userService = UserService()
     val patientService = PatientService()
+    val reportsService = ReportsService()
 
     routing {
         post("/users/create") {
@@ -97,15 +98,15 @@ fun Application.configureRouting() {
                 val userId = principal.name
                 val user = userService.getUserById(userId) ?: throw Throwable("User not found")
 
-                if (user.role != UserRoles.ADMIN.value) throw Throwable("You do not have the right privileges")
+                if (user.role != UserRolesEnum.ADMIN.value) throw Throwable("You do not have the right privileges")
 
                 val parameters = call.receiveParameters()
                 val userIdToUpdate = parameters["userId"] ?: throw Throwable("userId is required")
 
                 when (val role = parameters["role"]) {
-                    UserRoles.MEDICAL_LABORATORY_PROFESSIONAL.value,
-                    UserRoles.PHYSICIAN.value,
-                    UserRoles.NURSE.value -> userService.assignRole(userIdToUpdate, role)
+                    UserRolesEnum.MEDICAL_LABORATORY_PROFESSIONAL.value,
+                    UserRolesEnum.PHYSICIAN.value,
+                    UserRolesEnum.NURSE.value -> userService.assignRole(userIdToUpdate, role)
                 }
 
                 val users = userService.getAllUsers()
@@ -117,7 +118,7 @@ fun Application.configureRouting() {
 
                 val userId = principal.name
                 val user = userService.getUserById(userId) ?: throw Throwable("User not found")
-                if (user.role != UserRoles.NURSE.value) throw Throwable("You do not have the right privileges")
+                if (user.role != UserRolesEnum.NURSE.value) throw Throwable("You do not have the right privileges")
 
                 val newPatient = call.receive<NewPatient>()
                 val patient = patientService.createPatient(newPatient) ?: throw Throwable("Patient could not be saved")
@@ -135,6 +136,58 @@ fun Application.configureRouting() {
                 val patient = patientService.getPatientById(patientId) ?: throw Throwable("Patient does not exist")
 
                 call.respond(HttpStatusCode.OK, patient.toGetPatientResponse())
+            }
+
+            post("/patients/{patientId}/reports/generate") {
+                val principal = call.principal<UserIdPrincipal>() ?: throw Throwable("No principal decoded")
+
+                val userId = principal.name
+                val user = userService.getUserById(userId) ?: throw Throwable("User not found")
+
+                val patientId = call.parameters["patientId"] ?: throw Throwable("Patient ID is required")
+                val patient = patientService.getPatientById(patientId) ?: throw Throwable("Patient does not exist")
+                val newReport = call.receive<NewReport>()
+
+                val report = reportsService.createReport(
+                    newReport.toReport(
+                        reportsService.getNextReportNo(patientId),
+                        patientId,
+                        userId
+                    )
+                ) ?: throw Throwable("Report could not be created")
+
+                call.respond(HttpStatusCode.OK, report.toGetReportResponse(patient.name, user.name))
+            }
+
+            get("/patients/{patientId}/reports/{reportNo}") {
+                val principal = call.principal<UserIdPrincipal>() ?: throw Throwable("No principal decoded")
+
+                val userId = principal.name
+                userService.getUserById(userId) ?: throw Throwable("User not found")
+
+                val patientId = call.parameters["patientId"] ?: throw Throwable("Patient ID is required")
+                val patient = patientService.getPatientById(patientId) ?: throw Throwable("Patient does not exist")
+                val reportNo = call.parameters["reportNo"]?.toInt() ?: throw Throwable("Report number is required")
+
+                val report = reportsService.getReport(reportNo, patientId) ?: throw Throwable("Could not find report")
+                val author = userService.getUserById(report.authorId)
+                call.respond(HttpStatusCode.OK, report.toGetReportResponse(patient.name, author?.name ?: "Unknown"))
+            }
+
+            get("/patients/{patientId}/reports") {
+                val principal = call.principal<UserIdPrincipal>() ?: throw Throwable("No principal decoded")
+
+                val userId = principal.name
+                userService.getUserById(userId) ?: throw Throwable("User not found")
+
+                val patientId = call.parameters["patientId"] ?: throw Throwable("Patient ID is required")
+                patientService.getPatientById(patientId) ?: throw Throwable("Patient does not exist")
+
+                val reports = reportsService.getAllPatientReports(patientId).map {
+                    it.toGetReportsItem(userService.getUserById(it.authorId)?.name ?: "Unknown")
+                }
+
+                call.respond(HttpStatusCode.OK, reports)
             }
         }
     }
