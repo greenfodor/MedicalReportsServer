@@ -1,7 +1,7 @@
 val ktor_version: String by project
 val kotlin_version: String by project
 val logback_version: String by project
-val exposed_version: String = "0.31.1"
+val exposed_version: String = "0.32.1"
 
 plugins {
     application
@@ -46,6 +46,7 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-core:$exposed_version")
     implementation("org.jetbrains.exposed:exposed-dao:$exposed_version")
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposed_version")
+    implementation("org.jetbrains.exposed:exposed-jodatime:$exposed_version")
 
     //JDBC Connection Pool
     implementation("com.zaxxer:HikariCP:3.4.5")

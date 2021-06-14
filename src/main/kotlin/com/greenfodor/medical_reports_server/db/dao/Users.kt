@@ -4,7 +4,7 @@ import com.google.gson.annotations.SerializedName
 import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.Column
 
-object Users : UUIDTable() {
+object Users : UUIDTable("users") {
     val name: Column<String> = varchar("name", 100)
     val email: Column<String> = varchar("email", 100)
     val password: Column<String> = varchar("password", 100)

@@ -1,4 +1,4 @@
-package com.greenfodor.medical_reports_server.db.model
+package com.greenfodor.medical_reports_server.model
 
 enum class UserRoles(val value: String) {
     ADMIN(value = "admin"),

@@ -1,10 +1,8 @@
 package com.greenfodor.medical_reports_server.plugins
 
 import com.greenfodor.medical_reports_server.db.DatabaseFactory
-import com.greenfodor.medical_reports_server.db.dao.LoginUser
-import com.greenfodor.medical_reports_server.db.dao.NewUser
-import com.greenfodor.medical_reports_server.db.dao.UserService
-import com.greenfodor.medical_reports_server.db.model.UserRoles
+import com.greenfodor.medical_reports_server.db.dao.*
+import com.greenfodor.medical_reports_server.model.UserRoles
 import com.greenfodor.medical_reports_server.model.ErrorResponse
 import com.typesafe.config.ConfigFactory
 import freemarker.cache.ClassTemplateLoader
@@ -53,6 +51,7 @@ fun Application.configureRouting() {
 
     DatabaseFactory.init()
     val userService = UserService()
+    val patientService = PatientService()
 
     routing {
         post("/users/create") {
@@ -111,6 +110,19 @@ fun Application.configureRouting() {
 
                 val users = userService.getAllUsers()
                 call.respond(FreeMarkerContent("dashboard.ftl", mapOf("users" to users.sortedBy { it.id })))
+            }
+
+            post("/patients/register") {
+                val principal = call.principal<UserIdPrincipal>() ?: throw Throwable("No principal decoded")
+
+                val userId = principal.name
+                val user = userService.getUserById(userId) ?: throw Throwable("user not found")
+                if (user.role != UserRoles.NURSE.value) throw Throwable("You do not have the right privileges")
+
+                val newPatient = call.receive<NewPatient>()
+                val patient = patientService.createPatient(newPatient) ?: throw Throwable("Patient could not be saved")
+
+                call.respond(HttpStatusCode.OK, RegisterPatientResponse(patient.id))
             }
         }
     }
