@@ -17,7 +17,9 @@ data class Patient(
     val name: String,
     val dob: DateTime,
     val gender: String
-)
+) {
+    fun toGetPatientResponse() = GetPatientResponse(id, name, dob.toString(), gender)
+}
 
 data class NewPatient(
     @SerializedName("name")
@@ -31,4 +33,15 @@ data class NewPatient(
 data class RegisterPatientResponse(
     @SerializedName("patientId")
     val patientId: String
+)
+
+data class GetPatientResponse(
+    @SerializedName("id")
+    val id: String,
+    @SerializedName("name")
+    val name: String,
+    @SerializedName("dob")
+    val dob: String,
+    @SerializedName("gender")
+    val gender: String
 )

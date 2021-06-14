@@ -59,7 +59,7 @@ fun Application.configureRouting() {
 
             val existingUser = userService.getUserByEmail(newUser.email)
             if (existingUser != null) {
-                throw Throwable("email address already in use")
+                throw Throwable("Email address already in use")
             }
 
             userService.createUser(newUser)
@@ -82,7 +82,7 @@ fun Application.configureRouting() {
             get("/users/me") {
                 val principal = call.principal<UserIdPrincipal>() ?: throw Throwable("No principal decoded")
                 val userId = principal.name
-                val user = userService.getUserById(userId) ?: throw Throwable("user not found")
+                val user = userService.getUserById(userId) ?: throw Throwable("User not found")
 
                 call.respond(user)
             }
@@ -116,13 +116,25 @@ fun Application.configureRouting() {
                 val principal = call.principal<UserIdPrincipal>() ?: throw Throwable("No principal decoded")
 
                 val userId = principal.name
-                val user = userService.getUserById(userId) ?: throw Throwable("user not found")
+                val user = userService.getUserById(userId) ?: throw Throwable("User not found")
                 if (user.role != UserRoles.NURSE.value) throw Throwable("You do not have the right privileges")
 
                 val newPatient = call.receive<NewPatient>()
                 val patient = patientService.createPatient(newPatient) ?: throw Throwable("Patient could not be saved")
 
                 call.respond(HttpStatusCode.OK, RegisterPatientResponse(patient.id))
+            }
+
+            get("/patients/{patientId}") {
+                val principal = call.principal<UserIdPrincipal>() ?: throw Throwable("No principal decoded")
+
+                val userId = principal.name
+                userService.getUserById(userId) ?: throw Throwable("User not found")
+
+                val patientId = call.parameters["patientId"] ?: throw Throwable("Patient ID is required")
+                val patient = patientService.getPatientById(patientId) ?: throw Throwable("Patient does not exist")
+
+                call.respond(HttpStatusCode.OK, patient.toGetPatientResponse())
             }
         }
     }
