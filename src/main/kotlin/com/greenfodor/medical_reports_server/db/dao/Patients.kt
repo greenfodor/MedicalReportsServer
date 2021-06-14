@@ -23,7 +23,7 @@ data class NewPatient(
     @SerializedName("name")
     val name: String,
     @SerializedName("dob")
-    val dob: DateTime,
+    val dob: String,
     @SerializedName("gender")
     val gender: String
 )

@@ -2,6 +2,7 @@ package com.greenfodor.medical_reports_server.db.dao
 
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.joda.time.DateTime
 import java.util.*
 
 class PatientService {
@@ -15,7 +16,7 @@ class PatientService {
     fun createPatient(newPatient: NewPatient) = transaction {
         Patients.insert {
             it[name] = newPatient.name
-            it[dob] = newPatient.dob
+            it[dob] = DateTime.parse(newPatient.dob)
             it[gender] = newPatient.gender
         }.resultedValues?.firstOrNull()?.toPatient()
     }
